@@ -60,11 +60,6 @@ flowchart TD
     Engine --> WM[("Working Memory")]
     Engine --> Policy["Decision Policy"]
     Policy --> Brief["Decision Brief<br/>(ARTIFACT)"]
-    
-    style Engine fill:#e3f2fd,stroke:#1976d2,stroke-width:4px
-    style EngineBox fill:#f5f5f5,stroke:#9e9e9e,stroke-width:1px
-    style Brief fill:#fff3e0,stroke:#f57c00,stroke-width:3px
-    style WM fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 ```
 
 **Components:**
@@ -125,101 +120,21 @@ Conflicts between equal-authority sources are unresolvable and require human rev
 
 All scenarios use the same task: "Add rate limiting to the /login endpoint"
 
-### Scenario 1: All Evidence Present → PROCEED
+| Scenario | Condition | Decision | Rule Fired |
+|----------|-----------|----------|------------|
+| 1 | All evidence present | PROCEED | Proceed Rule |
+| 2 | Stale architecture doc | ESCALATE | Freshness Rule |
+| 3 | Restricted security policy | ESCALATE | Permission Rule |
+| 4 | Conflicting claims | ESCALATE | Conflict Rule |
 
-**Input:** `fixtures/scenario1/task.json`
-```json
-{
-  "metadata": {
-    "task_id": "task-001",
-    "task_type": "rate_limiting",
-    "description": "Add rate limiting to the /login endpoint"
-  }
-}
-```
-
-**Output:** Decision Brief (trimmed)
-```json
-{
-  "decision": "PROCEED",
-  "reason": "All required evidence validated",
-  "evidence_count": 49,
-  "rules_fired": ["Proceed Rule"],
-  "context_reduction": 0.117
-}
-```
-
-### Scenario 2: Stale Architecture Doc → ESCALATE
-
-**Input:** Architecture doc dated 2024-06-15 (>12 months old)
-
-**Output:** Decision Brief (trimmed)
-```json
-{
-  "decision": "ESCALATE",
-  "reason": "Stale documentation for required context",
-  "stale_count": 4,
-  "rules_fired": ["Freshness Rule"]
-}
-```
-
-### Scenario 3: Restricted Security Policy → ESCALATE
-
-**Input:** `permissions.json` marks `security_policy.md` as restricted
-
-**Output:** Decision Brief (trimmed)
-```json
-{
-  "decision": "ESCALATE",
-  "reason": "Insufficient authorized evidence",
-  "permission_violations": 5,
-  "missing": ["configuration"],
-  "rules_fired": ["Permission Rule"]
-}
-```
-
-### Scenario 4: Conflicting Claims → ESCALATE
-
-**Input:** Two architecture docs (v2.0 and v2.1) disagree on auth method
-
-**Output:** Decision Brief (trimmed)
-```json
-{
-  "decision": "ESCALATE",
-  "reason": "Unresolved conflicting evidence",
-  "conflicts": 6,
-  "rules_fired": ["Conflict Rule"]
-}
-```
+**Detailed inputs/outputs:** See [`docs/VALIDATION.md`](docs/VALIDATION.md#sample-inputs-and-outputs)
 
 ## Validation
 
-### Test Results
-
-**Test Suite:** 26/26 tests passing
-
-```bash
-$ uv run pytest tests/ -v
-============================= test session starts ==============================
-tests/test_engine.py::test_extract_claims_from_document PASSED           [  3%]
-tests/test_engine.py::test_validate_freshness_valid PASSED               [  7%]
-...
-tests/test_scenarios.py::test_scenario_1_proceeds PASSED                 [ 88%]
-tests/test_scenarios.py::test_scenario_2_escalates_on_staleness PASSED   [ 92%]
-tests/test_scenarios.py::test_scenario_3_escalates_on_permissions PASSED [ 96%]
-tests/test_scenarios.py::test_scenario_4_escalates_on_conflict PASSED    [100%]
-============================== 26 passed in 0.13s ==============================
-```
-
-### Evaluation Metrics
-
-| Metric | Goal | Actual | Status |
-|--------|------|--------|--------|
-| Decision Accuracy | 4/4 scenarios correct | 4/4 | ✅ Pass |
-| False Proceed Rate | 0% | 0% | ✅ Pass |
-| False Escalation Rate | 0% | 0% | ✅ Pass |
-| Context Reduction | >80% | 11.7% / 33.0% / 26.8% / 4.3% | ⚠️ Below target |
-| Explainability | 100% | 100% | ✅ Pass |
+**Test Suite:** 26/26 tests passing  
+**Decision Accuracy:** 4/4 scenarios correct  
+**False Proceed Rate:** 0%  
+**False Escalation Rate:** 0%  
 
 **Detailed validation checklist:** See [`docs/VALIDATION.md`](docs/VALIDATION.md)
 
