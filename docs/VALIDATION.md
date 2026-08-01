@@ -110,7 +110,38 @@ The system requires 5 context categories: `endpoint_implementation`, `middleware
     }
   ],
   "working_memory": {
-    "facts": []
+    "facts": [
+      {
+        "key": "auth_mechanism",
+        "value": "Confirmed that we're using JWT tokens for authentication. The middleware validates the token on each request.",
+        "source": "meeting_notes.md",
+        "discovered_at": "2026-08-01 15:30:00.836128"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "The system uses JWT tokens for authentication. The /login endpoint validates credentials and returns a JWT token.",
+        "source": "architecture.md",
+        "discovered_at": "2026-08-01 15:30:00.836157"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "2. Authentication middleware (JWT validation)",
+        "source": "architecture.md",
+        "discovered_at": "2026-08-01 15:30:00.836174"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "The application uses JWT tokens for authentication. Users must provide a valid JWT token in the Authorization header.",
+        "source": "readme.md",
+        "discovered_at": "2026-08-01 15:30:00.836243"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "\"\"\"Authentication middleware using JWT.\"\"\"",
+        "source": "middleware.py",
+        "discovered_at": "2026-08-01 15:30:00.836268"
+      }
+    ]
   },
   "missing": [],
   "conflicts": [],
@@ -289,7 +320,26 @@ Last updated: 2026-01-09
     }
   ],
   "working_memory": {
-    "facts": []
+    "facts": [
+      {
+        "key": "auth_mechanism",
+        "value": "The system uses OAuth2 with JWT tokens for authentication.",
+        "source": "architecture.md",
+        "discovered_at": "2026-08-01 15:32:07.788275"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "\"\"\"Authentication middleware using JWT.\"\"\"",
+        "source": "middleware.py",
+        "discovered_at": "2026-08-01 15:32:07.788299"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "The application uses JWT tokens for authentication.",
+        "source": "readme.md",
+        "discovered_at": "2026-08-01 15:32:07.788375"
+      }
+    ]
   },
   "missing": ["configuration"],
   "conflicts": [],
@@ -404,7 +454,32 @@ Last updated: 2026-01-10
     }
   ],
   "working_memory": {
-    "facts": []
+    "facts": [
+      {
+        "key": "auth_mechanism",
+        "value": "The system uses JWT tokens for authentication. The /login endpoint validates credentials and returns a JWT token.",
+        "source": "architecture_v2.0.md",
+        "discovered_at": "2026-08-01 15:33:16.513023"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "The system uses OAuth2 for authentication. The /login endpoint validates credentials using OAuth2 flow and returns an access token.",
+        "source": "architecture_v2.1.md",
+        "discovered_at": "2026-08-01 15:33:16.513038"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "\"\"\"Authentication middleware using JWT.\"\"\"",
+        "source": "middleware.py",
+        "discovered_at": "2026-08-01 15:33:16.513052"
+      },
+      {
+        "key": "auth_mechanism",
+        "value": "The application uses JWT tokens for authentication.",
+        "source": "readme.md",
+        "discovered_at": "2026-08-01 15:33:16.513105"
+      }
+    ]
   },
   "missing": [],
   "conflicts": [
