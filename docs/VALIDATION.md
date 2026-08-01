@@ -16,11 +16,9 @@ From `docs/SPEC.md` Section 15: Evaluation
 
 ## Sample Inputs and Outputs
 
-All scenarios use the same task: "Add rate limiting to the /login endpoint"
+All scenarios use the same task definition:
 
-### Scenario 1: All Evidence Present → PROCEED
-
-**Input:** `fixtures/scenario1/task.json`
+**Task Input** (`fixtures/scenario*/task.json`):
 ```json
 {
   "metadata": {
@@ -37,11 +35,140 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
 }
 ```
 
-**Output:** Decision Brief (trimmed)
+The system requires 5 context categories: `endpoint_implementation`, `middleware`, `api_documentation`, `security_policy`, `configuration`.
+
+---
+
+### Scenario 1: All Evidence Present → PROCEED
+
+**What makes this scenario work:**
+- All required documents are present and fresh (dated within thresholds)
+- No permission restrictions
+- No conflicts between documents
+
+**Input Files:**
+
+`fixtures/scenario1/permissions.json`:
+```json
+{
+  "access_control": {
+    "agent_role": "developer",
+    "allowed_documents": ["readme.md", "architecture.md", "api.md", "meeting_notes.md"],
+    "restricted_documents": []
+  }
+}
+```
+
+`fixtures/scenario1/docs/`:
+- `readme.md` (dated 2026-01-10) - mentions JWT authentication
+- `architecture.md` (dated 2026-01-12) - describes JWT authentication, middleware chain, rate limiting config
+- `api.md` (dated 2026-01-11) - documents /login endpoint, JWT tokens, rate limiting config
+- `meeting_notes.md` (dated 2026-01-08) - discusses rate limiting implementation, JWT authentication
+
+`fixtures/scenario1/repo/`:
+- `login.py` (code) - /login endpoint implementation
+- `middleware.py` (code) - auth and logging middleware
+- `config.py` (code) - rate limiting configuration
+
+**Output:** Decision Brief (representative sample)
 ```json
 {
   "decision": "PROCEED",
   "reason": "All required evidence validated",
+  "evidence": [
+    {
+      "claim": {
+        "claim_id": "architecture.md_claim_8",
+        "text": "The system uses JWT tokens for authentication. The /login endpoint validates credentials and returns a JWT token.",
+        "source": "architecture.md",
+        "source_type": "architecture_docs",
+        "topic": "authentication_method",
+        "timestamp": "2026-01-12T00:00:00",
+        "authority": 3,
+        "confidence": 0.8,
+        "is_fact": true,
+        "fact_key": "auth_mechanism"
+      },
+      "validated_at": "2026-08-01T15:16:04.267531",
+      "is_valid": true
+    },
+    {
+      "claim": {
+        "claim_id": "config.py_claim_4",
+        "text": "RATE_LIMITING_REQUESTS_PER_MINUTE = 60",
+        "source": "config.py",
+        "source_type": "code",
+        "topic": "rate_limiting",
+        "timestamp": "2026-08-01T13:00:49.667010",
+        "authority": 1,
+        "confidence": 0.8,
+        "is_fact": false,
+        "fact_key": null
+      },
+      "validated_at": "2026-08-01T15:16:04.267758",
+      "is_valid": true
+    }
+  ],
+  "working_memory": {
+    "facts": []
+  },
+  "missing": [],
+  "conflicts": [],
+  "stale": [],
+  "permission_violations": [],
+  "rules_fired": ["Proceed Rule"],
+  "context_reduction": 0.117
+}
+```
+
+**Summary:** 49 validated evidence items, 0 missing, 0 conflicts, 0 stale, 0 permission violations.
+
+---
+
+### Scenario 2: Stale Architecture Doc → ESCALATE
+
+**What makes this scenario fail:**
+- `architecture.md` is dated 2024-06-15 (>12 months old, threshold is 365 days)
+- Architecture docs contain critical authentication and middleware information
+- Stale architecture docs cause escalation via Freshness Rule
+
+**Input Files:**
+
+`fixtures/scenario2/permissions.json`:
+```json
+{
+  "access_control": {
+    "agent_role": "developer",
+    "allowed_documents": ["readme.md", "architecture.md", "api.md", "meeting_notes.md"],
+    "restricted_documents": []
+  }
+}
+```
+
+`fixtures/scenario2/docs/architecture.md` (THE KEY DIFFERENCE):
+```markdown
+# Architecture Documentation
+
+## System Overview
+
+The Evidence Context Engine is a FastAPI application.
+
+### Authentication
+
+The system uses basic session-based authentication. Users log in and receive a session cookie.
+
+### Middleware
+
+The application uses logging middleware only.
+
+Last updated: 2024-06-15
+```
+
+**Output:** Decision Brief (representative sample)
+```json
+{
+  "decision": "ESCALATE",
+  "reason": "Stale documentation for required context",
   "evidence": [
     {
       "claim": {
@@ -55,52 +182,7 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
         "confidence": 0.8,
         "is_fact": true
       },
-      "validated_at": "2026-08-01T13:43:55.087649",
-      "is_valid": true
-    }
-  ],
-  "working_memory": {
-    "facts": [
-      {
-        "key": "auth_mechanism",
-        "value": "Confirmed that we're using JWT tokens for authentication.",
-        "source": "meeting_notes.md"
-      }
-    ]
-  },
-  "missing": [],
-  "conflicts": [],
-  "stale": [],
-  "permission_violations": [],
-  "rules_fired": ["Proceed Rule"],
-  "context_reduction": 0.117
-}
-```
-
-*Note: The full Decision Brief contains 49 validated evidence items. Only one is shown here for brevity.*
-
-### Scenario 2: Stale Architecture Doc → ESCALATE
-
-**Input:** Architecture doc dated 2024-06-15 (>12 months old)
-
-**Output:** Decision Brief (trimmed)
-```json
-{
-  "decision": "ESCALATE",
-  "reason": "Stale documentation for required context",
-  "evidence": [
-    {
-      "claim": {
-        "claim_id": "meeting_notes.md_claim_11",
-        "text": "We discussed adding rate limiting to the /login endpoint.",
-        "source": "meeting_notes.md",
-        "source_type": "meeting_notes",
-        "topic": "rate_limiting",
-        "timestamp": "2026-01-08T00:00:00",
-        "authority": 5,
-        "confidence": 0.8
-      },
-      "validated_at": "2026-08-01T13:43:55.087649",
+      "validated_at": "2026-08-01T15:16:04.267492",
       "is_valid": true
     }
   ],
@@ -112,18 +194,19 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
   "stale": [
     {
       "claim": {
-        "claim_id": "architecture.md_claim_5",
-        "text": "The system uses JWT tokens for authentication.",
+        "claim_id": "architecture.md_claim_4",
+        "text": "The Evidence Context Engine is a FastAPI application.",
         "source": "architecture.md",
         "source_type": "architecture_docs",
-        "topic": "authentication_method",
+        "topic": "api_structure",
         "timestamp": "2024-06-15T00:00:00",
         "authority": 3,
-        "confidence": 0.8
+        "confidence": 0.8,
+        "is_fact": true
       },
-      "validated_at": "2026-08-01T13:43:55.087649",
+      "validated_at": "2026-08-01T15:16:04.267528",
       "is_valid": false,
-      "validation_reason": "Claim is 777 days old, threshold is 365 days"
+      "validation_reason": "Claim is 577 days old, threshold is 365 days"
     }
   ],
   "permission_violations": [],
@@ -132,13 +215,58 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
 }
 ```
 
-*Note: Shows 4 stale claims from architecture.md (dated 2024-06-15).*
+**Summary:** 27 validated evidence items, 4 stale claims from architecture.md (all rejected due to age).
+
+---
 
 ### Scenario 3: Restricted Security Policy → ESCALATE
 
-**Input:** `permissions.json` marks `security_policy.md` as restricted
+**What makes this scenario fail:**
+- `security_policy.md` contains critical rate limiting requirements
+- `security_policy.md` is marked as restricted in permissions.json
+- Restricted documents cannot be used, causing escalation via Permission Rule
 
-**Output:** Decision Brief (trimmed)
+**Input Files:**
+
+`fixtures/scenario3/permissions.json` (THE KEY DIFFERENCE):
+```json
+{
+  "access_control": {
+    "agent_role": "developer",
+    "allowed_documents": ["readme.md", "architecture.md", "api.md", "meeting_notes.md"],
+    "restricted_documents": ["security_policy.md"]
+  }
+}
+```
+
+`fixtures/scenario3/docs/security_policy.md` (RESTRICTED):
+```markdown
+# Security Policy
+
+## Rate Limiting Requirements
+
+All authentication endpoints must implement rate limiting to prevent brute force attacks.
+
+**Requirements:**
+- Maximum 5 failed login attempts per minute per IP
+- Lock account after 10 failed attempts
+- Log all rate limit violations
+
+## Authentication Security
+
+JWT tokens must:
+- Expire after 1 hour
+- Use RS256 algorithm
+- Include user ID and role in claims
+
+## Compliance
+
+This policy is restricted to security team members only.
+
+Last updated: 2026-01-09
+```
+
+**Output:** Decision Brief (representative sample)
 ```json
 {
   "decision": "ESCALATE",
@@ -147,15 +275,16 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
     {
       "claim": {
         "claim_id": "meeting_notes.md_claim_11",
-        "text": "We discussed adding rate limiting to the /login endpoint.",
+        "text": "We discussed adding rate limiting to the /login endpoint to prevent brute force attacks.",
         "source": "meeting_notes.md",
         "source_type": "meeting_notes",
         "topic": "rate_limiting",
         "timestamp": "2026-01-08T00:00:00",
         "authority": 5,
-        "confidence": 0.8
+        "confidence": 0.8,
+        "is_fact": true
       },
-      "validated_at": "2026-08-01T13:43:55.087649",
+      "validated_at": "2026-08-01T15:16:04.267492",
       "is_valid": true
     }
   ],
@@ -169,15 +298,16 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
     {
       "claim": {
         "claim_id": "security_policy.md_claim_5",
-        "text": "All authentication endpoints must implement rate limiting.",
+        "text": "All authentication endpoints must implement rate limiting to prevent brute force attacks.",
         "source": "security_policy.md",
         "source_type": "security_policy",
         "topic": "rate_limiting",
         "timestamp": "2026-01-09T00:00:00",
         "authority": 2,
-        "confidence": 0.8
+        "confidence": 0.8,
+        "is_fact": true
       },
-      "validated_at": "2026-08-01T13:43:55.087649",
+      "validated_at": "2026-08-01T15:16:04.267649",
       "is_valid": false,
       "validation_reason": "Document security_policy.md is restricted"
     }
@@ -187,13 +317,71 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
 }
 ```
 
-*Note: Shows 5 permission violations from security_policy.md (restricted document).*
+**Summary:** 28 validated evidence items, 5 permission violations from security_policy.md (all rejected due to access control).
+
+---
 
 ### Scenario 4: Conflicting Claims → ESCALATE
 
-**Input:** Two architecture docs (v2.0 and v2.1) disagree on auth method
+**What makes this scenario fail:**
+- Two architecture docs (v2.0 and v2.1) disagree on authentication method
+- `architecture_v2.0.md` says "JWT tokens" (dated 2025-12-15)
+- `architecture_v2.1.md` says "OAuth2" (dated 2026-01-10)
+- Both have same authority level (3), so conflict is unresolvable
+- Unresolvable conflicts cause escalation via Conflict Rule
 
-**Output:** Decision Brief (trimmed)
+**Input Files:**
+
+`fixtures/scenario4/permissions.json`:
+```json
+{
+  "access_control": {
+    "agent_role": "developer",
+    "allowed_documents": ["readme.md", "architecture_v2.0.md", "architecture_v2.1.md", "api.md", "meeting_notes.md"],
+    "restricted_documents": []
+  }
+}
+```
+
+`fixtures/scenario4/docs/architecture_v2.0.md` (THE KEY DIFFERENCE):
+```markdown
+# Architecture Documentation v2.0
+
+## System Overview
+
+The Evidence Context Engine is a FastAPI application.
+
+### Authentication
+
+The system uses JWT tokens for authentication. The /login endpoint validates credentials and returns a JWT token.
+
+### Middleware
+
+The application uses logging and authentication middleware.
+
+Last updated: 2025-12-15
+```
+
+`fixtures/scenario4/docs/architecture_v2.1.md` (THE KEY DIFFERENCE):
+```markdown
+# Architecture Documentation v2.1
+
+## System Overview
+
+The Evidence Context Engine is a FastAPI application.
+
+### Authentication
+
+The system uses OAuth2 for authentication. The /login endpoint validates credentials using OAuth2 flow and returns an access token.
+
+### Middleware
+
+The application uses logging and authentication middleware.
+
+Last updated: 2026-01-10
+```
+
+**Output:** Decision Brief (representative sample)
 ```json
 {
   "decision": "ESCALATE",
@@ -202,15 +390,16 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
     {
       "claim": {
         "claim_id": "meeting_notes.md_claim_11",
-        "text": "We discussed adding rate limiting to the /login endpoint.",
+        "text": "We discussed adding rate limiting to the /login endpoint to prevent brute force attacks.",
         "source": "meeting_notes.md",
         "source_type": "meeting_notes",
         "topic": "rate_limiting",
         "timestamp": "2026-01-08T00:00:00",
         "authority": 5,
-        "confidence": 0.8
+        "confidence": 0.8,
+        "is_fact": true
       },
-      "validated_at": "2026-08-01T13:43:55.087649",
+      "validated_at": "2026-08-01T15:16:04.267492",
       "is_valid": true
     }
   ],
@@ -222,30 +411,34 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
     {
       "claim_a": {
         "claim": {
-          "claim_id": "architecture_v2.0.md_claim_5",
-          "text": "The system uses JWT tokens for authentication.",
+          "claim_id": "architecture_v2.0.md_claim_8",
+          "text": "The system uses JWT tokens for authentication. The /login endpoint validates credentials and returns a JWT token.",
           "source": "architecture_v2.0.md",
           "source_type": "architecture_docs",
           "topic": "authentication_method",
           "timestamp": "2025-12-15T00:00:00",
           "authority": 3,
-          "confidence": 0.8
+          "confidence": 0.8,
+          "is_fact": true,
+          "fact_key": "auth_mechanism"
         },
-        "validated_at": "2026-08-01T13:43:55.087649",
+        "validated_at": "2026-08-01T15:16:04.267531",
         "is_valid": true
       },
       "claim_b": {
         "claim": {
-          "claim_id": "architecture_v2.1.md_claim_5",
-          "text": "The system uses OAuth2 for authentication.",
+          "claim_id": "architecture_v2.1.md_claim_8",
+          "text": "The system uses OAuth2 for authentication. The /login endpoint validates credentials using OAuth2 flow and returns an access token.",
           "source": "architecture_v2.1.md",
           "source_type": "architecture_docs",
           "topic": "authentication_method",
           "timestamp": "2026-01-10T00:00:00",
           "authority": 3,
-          "confidence": 0.8
+          "confidence": 0.8,
+          "is_fact": true,
+          "fact_key": "auth_mechanism"
         },
-        "validated_at": "2026-08-01T13:43:55.087649",
+        "validated_at": "2026-08-01T15:16:04.267534",
         "is_valid": true
       },
       "topic": "authentication_method",
@@ -261,7 +454,7 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
 }
 ```
 
-*Note: Shows 6 conflicts between architecture_v2.0.md (JWT) and architecture_v2.1.md (OAuth2). Both have authority=3, so conflicts are unresolvable.*
+**Summary:** 30 validated evidence items, 6 conflicts (all unresolvable due to equal authority level).
 
 ## Test Suite Results
 
