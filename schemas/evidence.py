@@ -10,7 +10,7 @@ class Claim(BaseModel):
     source_type: Literal["code", "security_policy", "architecture_docs", "readme", "meeting_notes"]
     topic: str = Field(description="Topic category, e.g., 'authentication_method'")
     timestamp: datetime
-    authority: int = Field(description="Authority level 1-5, higher is more authoritative")
+    authority: int = Field(description="Authority level 1-5, where 1=highest authority (code) and 5=lowest authority (meeting notes)")
     confidence: float = Field(ge=0.0, le=1.0)
     is_fact: bool = Field(default=False)
     fact_key: Optional[str] = None

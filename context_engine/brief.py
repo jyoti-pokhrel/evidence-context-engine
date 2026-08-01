@@ -39,17 +39,18 @@ def _estimate_brief_size(
     stale: list[Evidence],
     permission_violations: list[Evidence]
 ) -> int:
+    """
+    Estimate the size of the compressed context in the Decision Brief.
+    
+    Only counts validated evidence and working memory facts (what's retained),
+    not diagnostic metadata like stale, violations, conflicts, or missing
+    (what's rejected). A brief that correctly identifies and excludes stale
+    claims should get credit for that exclusion, not be penalized by including
+    their text length in the "compressed" size.
+    """
     size = 0
     for e in evidence:
         size += len(e.claim.text) + len(e.claim.source)
     for fact in working_memory.facts:
         size += len(fact.key) + len(fact.value)
-    for m in missing:
-        size += len(m)
-    for c in conflicts:
-        size += len(c.topic)
-    for e in stale:
-        size += len(e.claim.text)
-    for e in permission_violations:
-        size += len(e.claim.text)
     return size
