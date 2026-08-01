@@ -49,42 +49,19 @@ uv run pytest tests/ -v
 - 26/26 tests passing
 - Decision Brief output for each scenario
 
-## Generalizability
-
-This prototype tackles a single software engineering task (rate limiting) with code and documentation, but the pattern works anywhere agents need validated context:
-
-- **Issue trackers**: Check bug reports for reproduction steps, logs, and environment details before autonomous triage
-- **Calendars**: Verify meeting context (attendee list, agenda, prior notes) is complete and authorized before scheduling
-- **Email systems**: Confirm email threads have full conversation history and attachments before drafting responses
-- **Message platforms**: Validate chat context includes relevant threads, user permissions, and message history before acting
-- **Document repositories**: Check PDFs, contracts, or specs are current, authorized, and internally consistent before extraction
-- **User preferences**: Ensure preference data is fresh, authorized, and doesn't conflict across sources before personalization
-
-The core pattern—**retrieve → validate → compress → isolate**—works across domains:
-- Context Engine validation rules (freshness thresholds, permission checks, conflict resolution) adapt per domain
-- Decision Brief structure stays the same regardless of data type
-
 ## Architecture Overview
 
 ```mermaid
 flowchart TD
-    Task["Task"] --> Planner["Context Planner"]
-    Planner --> Retriever["Retriever<br/>(BM25)"]
-    Retriever --> Engine["Context Engine<br/>(HERO)"]
+    Input[Task + Docs + Permissions] --> Planner --> Retriever["Retriever<br/>(BM25)"] --> Engine
     
-    subgraph EngineBox["Context Engine Responsibilities"]
-        E1["• Extract claims"]
-        E2["• Validate freshness"]
-        E3["• Check permissions"]
-        E4["• Detect & resolve conflicts"]
-        E5["• Extract facts"]
-        E6["• Compress evidence"]
+    subgraph Engine["Context Engine"]
+        Extract[Extract Claims] --> Validate[Validate: Fresh, Authorized, No Conflicts]
+        Validate --> Compress[Compress to Evidence]
     end
     
-    Engine --- EngineBox
-    Engine --> WM[("Working Memory")]
-    Engine --> Policy["Decision Policy"]
-    Policy --> Brief["Decision Brief<br/>(ARTIFACT)"]
+    Engine --> Policy[Decision Policy]
+    Policy --> Brief[Decision Brief]
 ```
 
 **Components:**
@@ -235,6 +212,21 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
 - Deliberately basic—just document-level allow/deny
 - Demonstrates that the context layer respects access control
 - Production use requires much more sophisticated controls
+
+## Generalizability
+
+This prototype tackles a single software engineering task (rate limiting) with code and documentation, but the pattern works anywhere agents need validated context:
+
+- **Issue trackers**: Check bug reports for reproduction steps, logs, and environment details before autonomous triage
+- **Calendars**: Verify meeting context (attendee list, agenda, prior notes) is complete and authorized before scheduling
+- **Email systems**: Confirm email threads have full conversation history and attachments before drafting responses
+- **Message platforms**: Validate chat context includes relevant threads, user permissions, and message history before acting
+- **Document repositories**: Check PDFs, contracts, or specs are current, authorized, and internally consistent before extraction
+- **User preferences**: Ensure preference data is fresh, authorized, and doesn't conflict across sources before personalization
+
+The core pattern—**retrieve → validate → compress → isolate**—works across domains:
+- Context Engine validation rules (freshness thresholds, permission checks, conflict resolution) adapt per domain
+- Decision Brief structure stays the same regardless of data type
 
 ## Future Improvements
 
