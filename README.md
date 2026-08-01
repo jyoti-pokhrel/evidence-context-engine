@@ -8,11 +8,11 @@ A context layer that determines whether an AI agent has sufficient trusted evide
 
 ## Problem
 
-Autonomous AI agents fail when reasoning over raw retrieved context. They cannot determine whether retrieved information is sufficient, fresh, authorized, or consistent. This leads to two failure modes:
-- **False confidence**: Proceeding with incomplete/conflicting context, producing incorrect implementations
-- **Unnecessary escalation**: Blocking on tasks where sufficient evidence exists but hasn't been validated
+AI agents struggle when they reason over raw retrieved context. They can't tell if the information they have is sufficient, fresh enough, authorized, or even consistent. This creates two failure modes:
+- **False confidence**: The agent proceeds with incomplete or conflicting context and produces incorrect implementations
+- **Unnecessary escalation**: The agent blocks on tasks where sufficient evidence actually exists but hasn't been validated
 
-The Evidence Context Engine solves this by sitting between data sources and the agent. It retrieves candidate context, validates evidence (freshness, permissions, conflicts), compresses validated evidence into a Decision Brief, and provides only the Decision Brief to the agent—not raw documents.
+The Evidence Context Engine sits between data sources and the agent to fix this. It retrieves candidate context, validates evidence (checking freshness, permissions, and conflicts), compresses the validated evidence into a Decision Brief, and gives only that brief to the agent—not the raw documents.
 
 ## Users
 
@@ -47,16 +47,16 @@ uv run pytest tests/ -v
 
 ## Generalizability
 
-While this prototype demonstrates the pattern with a single software engineering task (rate limiting) and code/documentation repositories, the architecture applies to any domain where agents need validated context:
+This prototype tackles a single software engineering task (rate limiting) with code and documentation, but the underlying pattern works anywhere agents need validated context before acting:
 
-- **Issue trackers**: Validate that bug reports have sufficient reproduction steps, logs, and environment details before autonomous triage
-- **Calendars**: Check that meeting context (attendee list, agenda, prior notes) is complete and authorized before scheduling
-- **Email systems**: Verify that email threads have full conversation history and attachments before drafting responses
-- **Message platforms**: Ensure chat context includes relevant threads, user permissions, and message history before acting
-- **Document repositories**: Validate that PDFs, contracts, or specifications are current, authorized, and internally consistent before extraction
-- **User preferences**: Confirm that preference data is fresh, authorized, and doesn't conflict across sources before personalization
+- **Issue trackers**: Check that bug reports have enough reproduction steps, logs, and environment details before autonomous triage
+- **Calendars**: Verify meeting context (attendee list, agenda, prior notes) is complete and authorized before scheduling
+- **Email systems**: Confirm email threads have full conversation history and attachments before drafting responses
+- **Message platforms**: Make sure chat context includes relevant threads, user permissions, and message history before acting
+- **Document repositories**: Validate that PDFs, contracts, or specs are current, authorized, and internally consistent before extraction
+- **User preferences**: Ensure preference data is fresh, authorized, and doesn't conflict across sources before personalization
 
-The core pattern—**retrieve → validate → compress → isolate**—is domain-agnostic. The Context Engine's validation rules (freshness thresholds, permission checks, conflict resolution) can be configured per domain, and the Decision Brief structure remains the same regardless of data type.
+The core pattern—**retrieve → validate → compress → isolate**—doesn't care about the domain. The Context Engine's validation rules (freshness thresholds, permission checks, conflict resolution) can be tuned per domain, and the Decision Brief structure stays the same regardless of what you're working with.
 
 ## Architecture Overview
 
@@ -181,36 +181,36 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
 ### Tradeoffs
 
 **BM25 vs. Embeddings for Retrieval**
-We chose BM25 (lexical matching) over vector embeddings for simplicity and zero external dependencies. This works well for the demo's small corpus (<20 documents) but would not scale to production use cases requiring semantic search. For a production system, we'd use embeddings (e.g., sentence-transformers) with FAISS or a vector database.
+BM25 (lexical matching) was selected over vector embeddings to keep the prototype simple and avoid external dependencies. This approach works fine for the demo's small corpus (<20 documents), but wouldn't cut it in production where semantic search matters. A real system would need embeddings (sentence-transformers) with FAISS or a vector database.
 
 **Heuristic vs. LLM-Based Claim Extraction**
-The current implementation uses a heuristic line-splitting approach to extract claims from documents. This is deterministic, requires no API keys, and produces reproducible output for grading. A more sophisticated approach would use an LLM (e.g., GPT-4) with structured output to extract claims with higher semantic understanding. We chose the heuristic path to keep the demo self-contained and avoid requiring paid API keys. An LLM extraction path is noted as future work.
+The implementation uses a basic line-splitting heuristic to extract claims from documents. This keeps things deterministic and avoids API key requirements, which matters for reproducibility during grading. The tradeoff is that claim extraction is pretty crude—it just looks for lines with certain patterns. A production version would use an LLM with structured output to actually understand what's being said.
 
 **Rule-Based vs. ML-Based Conflict Resolution**
-Conflicts are resolved using explicit authority rules (Code > Security Policy > Architecture Docs > README > Meeting Notes). This is auditable and deterministic but less flexible than ML-based approaches that could learn from historical conflict patterns. For a production system, we might combine rule-based resolution with ML-based confidence scoring.
+Conflicts get resolved through explicit authority rules (Code > Security Policy > Architecture Docs > README > Meeting Notes). This makes the logic transparent and debuggable, but it's rigid. An ML approach could learn from past conflicts and handle edge cases better, though you'd lose the ability to explain why a particular conflict was resolved a certain way.
 
 ### Risks
 
-**False PROCEED if Metadata is Wrong**
-If a document's timestamp or permission metadata is incorrect at the source (e.g., a "Last updated" date is wrong), the freshness validation will use that incorrect metadata, potentially allowing stale claims through. The system trusts the metadata it receives.
+**Garbage In, Garbage Out**
+If a document's timestamp or permission metadata is wrong to begin with, the system will trust it. A stale "Last updated" date or incorrect permission flag could let bad evidence through or block good evidence. The system has no way to verify metadata accuracy—it just uses what it's given.
 
-**Narrow Conflict Detection**
-The current conflict detection only identifies contradictions within the same `fact_key` (e.g., two documents disagreeing on `auth_mechanism`). Other types of conflicts (e.g., two documents proposing different rate limiting strategies without a shared fact key) would pass through undetected. This is a known limitation of the prototype.
+**Limited Conflict Detection**
+Right now, the system only catches contradictions when two claims share the same `fact_key` (like two docs disagreeing on `auth_mechanism`). If two documents propose different approaches without overlapping on a fact key, the conflict slips through undetected. This is a real limitation, not just a prototype shortcut.
 
-**No Learning from Past Escalations**
-Working Memory resets between tasks, so the system cannot learn from previous escalations. If the same task is run twice with the same missing evidence, it will escalate both times rather than accumulating organizational knowledge about what's needed.
+**No Institutional Memory**
+Working Memory gets wiped between tasks, so the system never learns from past escalations. Run the same task twice with the same missing evidence, and you'll get the same escalation both times. There's no accumulation of organizational knowledge about what context is typically needed.
 
 ### Privacy Boundaries
 
 **Document-Level Access Control**
-The system enforces privacy through an explicit allowlist/denylist in `permissions.json`. Restricted documents are never passed to claim extraction, and their absence is surfaced in the Decision Brief as `permission_violations` rather than silently degrading the evidence set.
+Privacy is enforced through an explicit allowlist/denylist in `permissions.json`. Restricted documents never reach the claim extraction stage, and when they're blocked, the Decision Brief surfaces this as `permission_violations` instead of just silently working with less evidence.
 
-**What This Does NOT Cover**
-- **No redaction within allowed documents**: If a document is allowed, all its content is extracted. There is no field-level access control or PII redaction.
-- **No audit logging**: The system does not log which documents were accessed or by whom. In a production system, this would be critical for compliance.
-- **No encryption at rest**: Claims and evidence are stored in memory as plain Python objects. A production system would need encryption for sensitive organizational knowledge.
+**What's Not Covered**
+- **No field-level redaction**: If a document is allowed, the entire thing gets extracted. No PII filtering, no sensitive field masking.
+- **No audit trail**: There's no logging of which documents were accessed or by whom. Production systems need this for compliance.
+- **No encryption**: Claims and evidence live in memory as plain Python objects. A real system would encrypt sensitive organizational knowledge at rest.
 
-The privacy model is intentionally simple for the prototype: document-level allow/deny. This is sufficient to demonstrate the principle that the context layer must respect access control, but a production implementation would require more granular controls.
+The privacy model here is deliberately basic—just document-level allow/deny. It demonstrates that the context layer needs to respect access control, but production use would require much more sophisticated controls.
 
 ## Future Improvements
 
