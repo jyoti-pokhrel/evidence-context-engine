@@ -1,0 +1,7 @@
+{
+  "access_control": {
+    "agent_role": "developer",
+    "allowed_documents": ["readme.md", "architecture_v2.0.md", "architecture_v2.1.md", "api.md", "meeting_notes.md"],
+    "restricted_documents": []
+  }
+}

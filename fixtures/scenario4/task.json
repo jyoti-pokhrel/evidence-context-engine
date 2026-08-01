@@ -1,0 +1,13 @@
+{
+  "metadata": {
+    "task_id": "task-004",
+    "task_type": "rate_limiting",
+    "description": "Add rate limiting to the /login endpoint",
+    "endpoint": "/login",
+    "acceptance_criteria": [
+      "Implement rate limiting middleware",
+      "Apply to /login endpoint",
+      "Configure rate limit parameters"
+    ]
+  }
+}
