@@ -1,0 +1,15 @@
+[project]
+name = "evidence-context-engine"
+version = "0.1.0"
+description = "A context layer that determines whether an AI agent has sufficient trusted evidence to complete a software engineering task autonomously."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "rank-bm25>=0.2.2",
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "pytest>=7.0.0",
+]
+
+[project.scripts]
+evidence-context-engine = "main:main"
