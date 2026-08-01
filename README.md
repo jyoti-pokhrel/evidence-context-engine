@@ -149,12 +149,13 @@ All scenarios use the same task: "Add rate limiting to the /login endpoint"
 
 ## Limitations
 
-- One task per execution
-- Working Memory resets between tasks
-- BM25 retrieval (not suitable for large corpora)
-- Context requirements are predefined
-- Decision Brief is not consumed by an actual agent
-- Context reduction metric below 80% target (see VALIDATION.md for explanation)
+- **No LLM usage**: Claim extraction, conflict detection, and decision-making use heuristics and rules, not language models
+- **No agent integration**: Decision Brief is produced but not consumed by an actual agent
+- **Single task per execution**: Processes one task at a time, no parallel or sequential processing
+- **No persistent memory**: Working Memory resets between tasks, no learning from past escalations
+- **Small corpus only**: BM25 retrieval works for <20 documents, not suitable for large-scale use
+- **Predefined context**: Context requirements are hardcoded per task type, no dynamic determination
+- **Context reduction below target**: Achieves 11-33% instead of 80% (see VALIDATION.md)
 
 ## Tradeoffs, Risks, and Privacy Boundaries
 
